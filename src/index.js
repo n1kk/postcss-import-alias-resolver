@@ -26,9 +26,13 @@ module.exports = function (config = {}) {
 		alias,
     extensions,// = ['.css'],
     modules,// = ['node_modules'],
+    moduleFields,// = ['main'],
 		
     onResolve,
     onFail,
+    
+    // TODO: add module filename option eg 'index' 'main' '$FOLDER_NAME'
+    // TODO: add module info filename list eg 'package.json'
     
 		webpackConfig,
 		mergeAlias = 'extend',
@@ -67,6 +71,7 @@ module.exports = function (config = {}) {
   
   extensions = extensions || ['.css']
   modules = modules || ['node_modules']
+  moduleFields = moduleFields || ['main']
 	
 	if (!dontPrefix) {
 		alias = Object.entries(alias).reduce((acc, [alias, _path]) => {
@@ -88,8 +93,49 @@ module.exports = function (config = {}) {
 			? (id, ...args) => console[level==='fail'?'warn':'log'](`[Import Resolver] ${id}:`, ...args)
 			: () => {}
 	})
-	
-	return function resolve(id, basedir) {
+  
+  async function findFile(_path) {
+    if (await fse.pathExists(_path))
+      return _path
+    for (let ext of extensions)
+      if (await fse.pathExists(_path + ext))
+        return _path + ext
+  }
+  
+  async function isDir(_path) {
+    let stat = await fse.lstat(_path)
+    return stat.isDirectory()
+  }
+  
+  async function findModule(_path) {
+    if (await fse.pathExists(_path) && await isDir(_path)) {
+      let pkgPath = path.resolve(_path, 'package.json')
+      if (await fse.pathExists(pkgPath)) {
+        let pkg = await fse.readFile(pkgPath, 'utf8')
+        let json = JSON.parse(pkg)
+        for (let field of moduleFields) {
+          if (json[field]) {
+            let packageFile = path.resolve(_path, json[field])
+            let filepath = await findFile(packageFile)
+            if (filepath)
+              return filepath
+          }
+        }
+      } else {
+        let indexPath = path.resolve(_path, 'index')
+        let filepath = await findFile(indexPath)
+        if (filepath)
+          return filepath
+      }
+    } else {
+      let filepath = await findFile(_path)
+      if (filepath)
+        return filepath
+    }
+  }
+  
+  
+  return function resolve(id, basedir) {
 		return new Promise(async (resolve, rej) => {
 		  let res = (path) => {
 		    if (onResolve) {
@@ -107,14 +153,13 @@ module.exports = function (config = {}) {
 				log.all(id, 'looking in aliases', aliasName)
 				if (id.startsWith(aliasName + path.sep)) {
 					log.match(id, 'matched alias', aliasName, aliasPath)
-          for (let ext of extensions) {
-            let importPath = path.resolve(path.join(aliasPath, id.substring(aliasName.length) + ext))
-            if (await fse.pathExists(importPath)) {
-              log.match(id, 'found file', importPath)
-              return res(importPath)
-            }
-            log.fail(id, 'file not found', importPath)
+          let importPath = path.resolve(path.join(aliasPath, id.substring(aliasName.length)))
+          let filepath = await findFile(importPath)
+          if (filepath) {
+            log.match(id, 'found file', filepath)
+            return res(filepath)
           }
+          log.fail(id, 'file not found', importPath)
 				}
 			}
 			log.all(id, 'no matches with aliases')
@@ -122,22 +167,22 @@ module.exports = function (config = {}) {
 			if (id.startsWith('~')) {
 				log.all(id, 'looking in modules')
 				for (let modulePah of modules) {
-          for (let ext of extensions) {
-            let importPath = path.resolve('./' + modulePah, id.substring(1) + ext)
-            log.all(id, 'looking in', './' + modulePah)
-            if (await fse.pathExists(importPath)) {
-              log.match(id, 'found file', importPath)
-              return res(importPath)
-            }
+          let importPath = path.resolve('./' + modulePah, id.substring(1))
+          log.all(id, 'looking in', './' + modulePah)
+          let filepath = await findModule(importPath)
+          if (filepath) {
+            log.match(id, 'found file', filepath)
+            return res(filepath)
           }
 				}
 				log.fail(id, 'no matches in modules')
 			}
 			
 			let defPath = path.resolve(basedir, id)
-      if (await fse.pathExists(defPath)) {
-        log.match(id, 'found default', defPath)
-        return res(defPath)
+      let filepath = await findFile(defPath)
+      if (filepath) {
+        log.match(id, 'found default', filepath)
+        return res(filepath)
       } else {
         log.fail(id, 'no match for default')
         if (onFail) {

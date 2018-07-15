@@ -1,6 +1,6 @@
 const expect = require('chai').expect
 const sinon = require('sinon')
-const Resolver = require('./src/index')
+const Resolver = require('./')
 const path = require('path')
 
 let alias = {
@@ -167,6 +167,30 @@ describe('# Resolver', function() {
   
       await fromTo('~lib/index', 'node_modules/fs-extra/lib/index.js')
     });
+    
+    it('should resolve module package.json', async () => {
+      let fromTo = resolveFromTo({
+        webpackConfig: {resolve: {
+          alias: alias,
+          extensions: ['.js'],
+          modules: ['node_modules']
+        }},
+      })
+  
+      await fromTo('~fs-extra', 'node_modules/fs-extra/lib/index.js')
+    });
+  
+    it('should resolve folders index file', async () => {
+      let fromTo = resolveFromTo({
+        webpackConfig: {resolve: {
+          alias: alias,
+          extensions: ['.js'],
+          modules: ['./']
+        }},
+      })
+  
+      await fromTo('~src', 'src/index.js')
+    });
   
     describe('should merge modules', function() {
    
@@ -209,6 +233,7 @@ describe('# Resolver', function() {
         extensions: ['.js'],
         modules: ['src'],
         onResolve(id, base, path) {
+          console.log({id, base, path})
           expect(id).to.equal('~index')
           expect(base).to.equal(__dirname)
           expect(path).to.equal(fullPath('src/index.js'))
@@ -224,7 +249,7 @@ describe('# Resolver', function() {
         alias: alias,
         extensions: ['.js'],
         modules: ['src'],
-        onFail(id, base, path) {
+        onFail(id, base) {
           console.log({id, base})
           expect(id).to.equal('~inde')
           expect(base).to.equal(__dirname)
