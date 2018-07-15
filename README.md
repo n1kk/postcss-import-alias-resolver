@@ -113,7 +113,7 @@ Resolve example with above config and structure
 ## API
 
 #### `resolver(options)`
-Creates a resolver with set options
+Creates a resolver with set options.
 Options object accepts:
 - `alias`: an object with key/value pairs as alias/path:
   ```javascript
