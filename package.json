@@ -1,0 +1,30 @@
+{
+  "name": "postcss-import-alias-resolver",
+  "version": "0.1.0",
+  "description": "A tool to easily create custom alias resolver for postcss-import",
+  "main": "src/index.js",
+  "files": [
+    "src/index.js"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n1kk/postcss-import-alias-resolver.git"
+  },
+  "author": "n1kk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/n1kk/postcss-import-alias-resolver/issues"
+  },
+  "homepage": "https://github.com/n1kk/postcss-import-alias-resolver#readme",
+  "dependencies": {
+    "fs-extra": "^6.0.1"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0",
+    "sinon": "^6.1.3"
+  }
+}
