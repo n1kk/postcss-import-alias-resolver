@@ -151,7 +151,7 @@ module.exports = function (config = {}) {
 			log.all(id, 'looking in aliases')
 			for (let [aliasName, aliasPath] of Object.entries(alias)) {
 				log.all(id, 'looking in aliases', aliasName)
-				if (id.startsWith(aliasName + '/' || aliasName + '\\')) {
+				  if (id.startsWith(aliasName + '/') || id.startsWith(aliasName + '\\')) {
 					log.match(id, 'matched alias', aliasName, aliasPath)
           let importPath = path.resolve(path.join(aliasPath, id.substring(aliasName.length)))
           let filepath = await findFile(importPath)
